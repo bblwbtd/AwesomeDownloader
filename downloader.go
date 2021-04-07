@@ -32,21 +32,23 @@ func (w *WriteCounter) Write(p []byte) (n int, err error) {
 }
 
 type Downloader struct {
+    client *http.Client
 }
 
 func NewDownloader() *Downloader {
-    return &Downloader{}
+    return &Downloader{
+        client: http.DefaultClient,
+    }
 }
 
-var client = http.DefaultClient
 
-func getContentLength(URL *url.URL) (uint64, error) {
+func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
     request, err := http.NewRequest("HEAD", URL.String(), nil)
     if err != nil {
         return 0, err
     }
     request.Header.Add("HOST", URL.Host)
-    response, err := client.Do(request)
+    response, err := d.client.Do(request)
     if err != nil {
         return 0, err
     }
@@ -69,7 +71,7 @@ func (d *Downloader) Download(task *entities.DownloadTask, options *DownloadOpti
         return err
     }
 
-    length, err := getContentLength(URL)
+    length, err := d.getContentLength(URL)
     if err != nil {
         return err
     }
@@ -104,7 +106,7 @@ func (d *Downloader) Download(task *entities.DownloadTask, options *DownloadOpti
     if options != nil && options.header != nil {
         mergeHeader(downloadRequest, options.header)
     }
-    response, err := client.Do(downloadRequest)
+    response, err := d.client.Do(downloadRequest)
     if err != nil {
         return err
     }
