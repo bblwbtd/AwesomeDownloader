@@ -1,9 +1,9 @@
 package routers
 
 import (
-	"AwesomeDownloader/src/handlers"
-	"AwesomeDownloader/src/models"
 	"AwesomeDownloader/src/utils"
+	"AwesomeDownloader/src/web/handlers"
+	"AwesomeDownloader/src/web/models"
 	"github.com/gin-gonic/gin"
 )
 

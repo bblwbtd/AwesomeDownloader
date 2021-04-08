@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"AwesomeDownloader/src"
+	"AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
 	"context"
@@ -74,7 +74,7 @@ func TestDownloadBreakPoint(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	database.InitDB()
-	src.InitConfig()
+	config.InitConfig()
 
 	StartScheduler()
 
@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	_ = os.RemoveAll("temp")
 
-	src.RemoveConfig()
+	config.RemoveConfig()
 	database.RemoveDB()
 
 	os.Exit(code)

@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"AwesomeDownloader/src"
+	config2 "AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
-	"AwesomeDownloader/src/models"
+	"AwesomeDownloader/src/web/models"
 	"context"
 	"sync"
 )
@@ -15,7 +15,7 @@ var downloadProgress = sync.Map{}
 var downloader = NewDownloader()
 
 func StartScheduler() {
-	config := src.GetConfig()
+	config := config2.GetConfig()
 
 	for i := 0; i < config.MaxConnections; i += 1 {
 		go func() {

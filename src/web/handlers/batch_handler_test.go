@@ -3,7 +3,7 @@ package handlers
 import (
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
-	"AwesomeDownloader/src/models"
+	"AwesomeDownloader/src/web/models"
 	"path"
 	"testing"
 )
