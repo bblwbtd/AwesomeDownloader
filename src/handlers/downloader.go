@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"AwesomeDownloader/src/entities"
+	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"context"
 	"fmt"

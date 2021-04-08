@@ -1,7 +1,7 @@
 package database
 
 import (
-	"AwesomeDownloader/src/entities"
+	"AwesomeDownloader/src/database/entities"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
