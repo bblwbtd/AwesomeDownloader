@@ -21,6 +21,10 @@ func StartScheduler() {
 		go func() {
 			for {
 				task := <-taskChannel
+				database.DB.Take(task)
+				if task.Status != entities.Pending {
+					continue
+				}
 				ctx, cancel := context.WithCancel(context.TODO())
 				cancellations.Store(task.ID, cancel)
 				options := &DownloadOptions{
@@ -71,7 +75,6 @@ func RemoveTask(id uint) {
 
 func PauseTask(id uint) {
 	cancel(id)
-
 	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Paused)
 }
 

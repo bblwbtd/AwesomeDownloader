@@ -5,6 +5,7 @@ import (
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/web/models"
 	"database/sql"
+	"log"
 )
 
 func AddBatch(request *models.BatchRequest) *entities.Batch {
@@ -61,16 +62,19 @@ func PauseBatch(id uint) {
 
 	var tasks []entities.DownloadTask
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
+	taskID := make([]uint, len(tasks))
 
-	for _, task := range tasks {
+	for index, task := range tasks {
 		if task.Status == entities.Downloading {
 			cancel(id)
 		}
-
+		taskID[index] = task.ID
 		task.Status = entities.Paused
+		if err := database.DB.Save(task).Error; err != nil {
+			log.Println(err)
+		}
 	}
 
-	database.DB.Save(tasks)
 }
 
 func UnPauseBatch(id uint) {
@@ -83,6 +87,7 @@ func UnPauseBatch(id uint) {
 	for _, task := range tasks {
 		if task.Status == entities.Paused {
 			task.Status = entities.Pending
+			database.DB.Save(task)
 			taskChannel <- &task
 		}
 	}

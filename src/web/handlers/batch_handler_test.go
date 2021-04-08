@@ -6,21 +6,22 @@ import (
 	"AwesomeDownloader/src/web/models"
 	"path"
 	"testing"
+	"time"
 )
 
 func NewBatch() *entities.Batch {
 	tasks := []*models.DownloadRequest{
 		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch1.jpg"),
+			URL:  LargeFileURL,
+			Path: path.Join("temp", "batch1"),
 		},
 		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch2.jpg"),
+			URL:  LargeFileURL,
+			Path: path.Join("temp", "batch2"),
 		},
 		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch3.jpg"),
+			URL:  LargeFileURL,
+			Path: path.Join("temp", "batch3"),
 		},
 	}
 	request := &models.BatchRequest{
@@ -48,16 +49,50 @@ func TestAddBatch(t *testing.T) {
 
 func TestPauseBatch(t *testing.T) {
 	batch := NewBatch()
+
+	time.Sleep(1 * time.Second)
+
 	PauseBatch(batch.ID)
 
-	database.DB.Take(batch)
+	var tasks []entities.DownloadTask
+	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 
+	for _, task := range tasks {
+		if task.Status != entities.Paused {
+			t.Error("should be paused")
+		}
+	}
 }
 
 func TestUnPauseBatch(t *testing.T) {
+	batch := NewBatch()
 
+	time.Sleep(1 * time.Second)
+
+	PauseBatch(batch.ID)
+
+	time.Sleep(1 * time.Second)
+
+	UnPauseBatch(batch.ID)
+
+	var tasks []entities.DownloadTask
+	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
+
+	for _, task := range tasks {
+		if task.Status != entities.Pending {
+			t.Error("should be downloading")
+		}
+	}
 }
 
 func TestRemoveBatch(t *testing.T) {
+	batch := NewBatch()
+
+	RemoveBatch(batch.ID)
+
+	err := database.DB.Take(batch).Error
+	if err == nil {
+		t.Error("should be removed")
+	}
 
 }
