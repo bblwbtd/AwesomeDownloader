@@ -6,11 +6,12 @@ import (
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/models"
 	"context"
+	"sync"
 )
 
 var taskChannel = make(chan *entities.DownloadTask, 1024)
-var cancellations = map[uint]context.CancelFunc{}
-var downloadProgress = map[uint]uint64{}
+var cancellations = sync.Map{}
+var downloadProgress = sync.Map{}
 var downloader = NewDownloader()
 
 func StartScheduler() {
@@ -21,14 +22,14 @@ func StartScheduler() {
 			for {
 				task := <-taskChannel
 				ctx, cancel := context.WithCancel(context.TODO())
-				cancellations[task.ID] = cancel
+				cancellations.Store(task.ID, cancel)
 				options := &DownloadOptions{
 					updateSize: func(size uint64) {
 						task.Size = size
 						database.DB.Save(task)
 					},
 					onProgress: func(size uint64) {
-						downloadProgress[task.ID] = size
+						go downloadProgress.Store(task.ID, size)
 					},
 				}
 
@@ -42,7 +43,7 @@ func StartScheduler() {
 				task.Status = entities.Finished
 				database.DB.Save(task)
 
-				delete(cancellations, task.ID)
+				cancellations.Delete(task.ID)
 			}
 		}()
 	}
@@ -63,19 +64,13 @@ func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
 }
 
 func RemoveTask(id uint) {
-	delete(downloadProgress, id)
-	if cancel := cancellations[id]; cancel != nil {
-		cancel()
-		delete(cancellations, id)
-	}
+	downloadProgress.Delete(id)
+	cancel(id)
 	database.DB.Delete(&entities.DownloadTask{}, id)
 }
 
 func PauseTask(id uint) {
-	if cancel := cancellations[id]; cancel != nil {
-		cancel()
-		delete(cancellations, id)
-	}
+	cancel(id)
 
 	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Paused)
 }
@@ -95,10 +90,16 @@ func UnPauseTask(id uint) {
 	}()
 }
 
-func CancelTask(id int) {
-	if cancel := cancellations[uint(id)]; cancel != nil {
-		cancel()
-	}
+func CancelTask(id uint) {
+	cancel(id)
 
 	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Canceled)
+}
+
+func cancel(id uint) {
+	if cancel, loaded := cancellations.LoadAndDelete(id); loaded {
+		if cancelFun, ok := cancel.(context.CancelFunc); ok {
+			cancelFun()
+		}
+	}
 }

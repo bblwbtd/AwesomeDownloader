@@ -72,7 +72,7 @@ func TestCancelTask(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 
-	CancelTask(int(task.ID))
+	CancelTask(task.ID)
 
 	database.DB.Take(task)
 	if task.Status != entities.Canceled {

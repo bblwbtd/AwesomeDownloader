@@ -8,9 +8,9 @@ import (
 
 func AddBatch(request *models.BatchRequest) *entities.Batch {
 
-	tasks := make([]*entities.DownloadTask, len(request.Tasks))
-	for i, t := range tasks {
-		tasks[i] = &entities.DownloadTask{
+	tasks := make([]entities.DownloadTask, len(request.Tasks))
+	for i, t := range request.Tasks {
+		tasks[i] = entities.DownloadTask{
 			URL:    t.URL,
 			Path:   t.Path,
 			Size:   0,
@@ -26,7 +26,7 @@ func AddBatch(request *models.BatchRequest) *entities.Batch {
 	database.DB.Create(batch)
 
 	for _, task := range tasks {
-		taskChannel <- task
+		taskChannel <- &task
 	}
 
 	return batch
@@ -38,10 +38,8 @@ func RemoveBatch(id uint) {
 
 	for _, task := range batch.Tasks {
 		if task.Status == entities.Downloading {
-			if cancel := cancellations[task.ID]; cancel != nil {
-				cancel()
-			}
-			delete(downloadProgress, task.ID)
+			cancel(id)
+			downloadProgress.Delete(task.ID)
 		}
 	}
 
@@ -54,9 +52,7 @@ func PauseBatch(id uint) {
 
 	for _, task := range batch.Tasks {
 		if task.Status == entities.Downloading {
-			if cancel := cancellations[task.ID]; cancel != nil {
-				cancel()
-			}
+			cancel(id)
 		}
 
 		task.Status = entities.Paused
@@ -71,7 +67,7 @@ func UnPauseBatch(id uint) {
 	for _, task := range batch.Tasks {
 		if task.Status == entities.Paused {
 			task.Status = entities.Pending
-			taskChannel <- task
+			taskChannel <- &task
 		}
 	}
 }
