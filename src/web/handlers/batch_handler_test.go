@@ -33,33 +33,24 @@ func NewBatch() *entities.Batch {
 func TestAddBatch(t *testing.T) {
 	batch := NewBatch()
 
-	if err := database.DB.Take(batch).Error; err != nil {
+	var tasks []entities.DownloadTask
+
+	err := database.DB.Where("batch = ?", batch.ID).Find(&tasks).Error
+	if err != nil {
 		t.Error(err)
+		return
+	}
+
+	if len(tasks) != 3 {
+		t.Error("should be equal to 3")
 	}
 }
 
 func TestPauseBatch(t *testing.T) {
-	tasks := []*models.DownloadRequest{
-		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch1.jpg"),
-		},
-		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch2.jpg"),
-		},
-		{
-			URL:  ImageURL,
-			Path: path.Join("temp", "batch3.jpg"),
-		},
-	}
-	request := &models.BatchRequest{
-		Name:  "test",
-		Tasks: tasks,
-	}
-	batch := AddBatch(request)
-
+	batch := NewBatch()
 	PauseBatch(batch.ID)
+
+	database.DB.Take(batch)
 
 }
 

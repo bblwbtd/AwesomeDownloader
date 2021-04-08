@@ -1,6 +1,9 @@
 package entities
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+	"gorm.io/gorm"
+)
 
 type DownloadStatus = string
 
@@ -15,8 +18,9 @@ const (
 
 type DownloadTask struct {
 	gorm.Model
-	URL    string `json:"url" gorm:"index"`
-	Path   string `json:"path"`
-	Size   uint64 `json:"size"`
-	Status string `json:"status"`
+	URL    string        `json:"url" gorm:"index"`
+	Path   string        `json:"path"`
+	Size   uint64        `json:"size"`
+	Status string        `json:"status"`
+	Batch  sql.NullInt64 `json:"batch" gorm:"index"`
 }
