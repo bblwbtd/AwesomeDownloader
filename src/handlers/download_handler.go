@@ -9,7 +9,7 @@ import (
 )
 
 var taskChannel = make(chan *entities.DownloadTask, 1024)
-var contextMap = map[uint]context.CancelFunc{}
+var cancellations = map[uint]context.CancelFunc{}
 var downloadProgress = map[uint]uint64{}
 var downloader = NewDownloader()
 
@@ -21,7 +21,7 @@ func StartScheduler() {
 			for {
 				task := <-taskChannel
 				ctx, cancel := context.WithCancel(context.TODO())
-				contextMap[task.ID] = cancel
+				cancellations[task.ID] = cancel
 				options := &DownloadOptions{
 					updateSize: func(size uint64) {
 						task.Size = size
@@ -41,6 +41,8 @@ func StartScheduler() {
 
 				task.Status = entities.Finished
 				database.DB.Save(task)
+
+				delete(cancellations, task.ID)
 			}
 		}()
 	}
@@ -60,26 +62,43 @@ func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
 	return task
 }
 
-func RemoveTask(id int) {
-	delete(downloadProgress, uint(id))
-	if cancel := contextMap[uint(id)]; cancel != nil {
+func RemoveTask(id uint) {
+	delete(downloadProgress, id)
+	if cancel := cancellations[id]; cancel != nil {
 		cancel()
+		delete(cancellations, id)
 	}
 	database.DB.Delete(&entities.DownloadTask{}, id)
 }
 
-func PauseTask(id int) {
-	if cancel := contextMap[uint(id)]; cancel != nil {
+func PauseTask(id uint) {
+	if cancel := cancellations[id]; cancel != nil {
 		cancel()
+		delete(cancellations, id)
 	}
 
 	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Paused)
 }
 
-func unPauseTask() {
+func UnPauseTask(id uint) {
+	task := new(entities.DownloadTask)
+	err := database.DB.Take(task, id).Error
+	if err != nil {
+		return
+	}
 
+	task.Status = entities.Pending
+	database.DB.Save(task)
+
+	go func() {
+		taskChannel <- task
+	}()
 }
 
-func CancelTask() {
+func CancelTask(id int) {
+	if cancel := cancellations[uint(id)]; cancel != nil {
+		cancel()
+	}
 
+	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Canceled)
 }

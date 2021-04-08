@@ -107,9 +107,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.DownloadTask, 
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = response.Body.Close()
-	}()
+	defer response.Body.Close()
 
 	stat, _ = file.Stat()
 	counter := WriteCounter{

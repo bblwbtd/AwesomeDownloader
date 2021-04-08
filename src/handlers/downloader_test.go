@@ -76,6 +76,8 @@ func TestMain(m *testing.M) {
 	database.InitDB()
 	src.InitConfig()
 
+	StartScheduler()
+
 	_ = os.RemoveAll("temp")
 	code := m.Run()
 	_ = os.RemoveAll("temp")

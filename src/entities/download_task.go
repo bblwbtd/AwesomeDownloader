@@ -15,7 +15,7 @@ const (
 
 type DownloadTask struct {
 	gorm.Model
-	URL    string `json:"url"`
+	URL    string `json:"url" gorm:"index"`
 	Path   string `json:"path"`
 	Size   uint64 `json:"size"`
 	Status string `json:"status"`
