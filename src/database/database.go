@@ -6,14 +6,13 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
-	"os"
 )
 
 var DB *gorm.DB
 
-func InitDB() {
+func InitDB(dsn string) {
 	var err error
-	DB, err = gorm.Open(sqlite.Open("data.db"), &gorm.Config{
+	DB, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
@@ -22,12 +21,5 @@ func InitDB() {
 	err = DB.AutoMigrate(&entities.DownloadTask{}, &entities.Batch{})
 	if err != nil {
 		log.Panic(err)
-	}
-}
-
-func RemoveDB() {
-	err := os.Remove("data.db")
-	if err != nil {
-		log.Println(err)
 	}
 }

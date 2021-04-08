@@ -73,7 +73,7 @@ func TestDownloadBreakPoint(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	database.InitDB()
+	database.InitDB("file::memory:?cache=shared")
 	config.InitConfig()
 
 	StartScheduler()
@@ -83,7 +83,6 @@ func TestMain(m *testing.M) {
 	_ = os.RemoveAll("temp")
 
 	config.RemoveConfig()
-	database.RemoveDB()
 
 	os.Exit(code)
 }

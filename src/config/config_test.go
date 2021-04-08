@@ -8,4 +8,5 @@ func TestGetConfig(t *testing.T) {
 	if config == nil {
 		t.Error("no config")
 	}
+	RemoveConfig()
 }
