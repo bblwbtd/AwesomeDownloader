@@ -1,23 +1,25 @@
 package handlers
 
 import (
-	config2 "AwesomeDownloader/src/config"
+	"AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/downloader"
 	"AwesomeDownloader/src/web/models"
 	"context"
+	"path"
 	"sync"
 )
 
 var taskChannel = make(chan *entities.DownloadTask, 1024)
 var cancellations = sync.Map{}
 var downloadProgress = sync.Map{}
-var downloader = NewDownloader()
+var dl = downloader.NewDownloader()
 
 func StartScheduler() {
-	config := config2.GetConfig()
+	cfg := config.GetConfig()
 
-	for i := 0; i < config.MaxConnections; i += 1 {
+	for i := 0; i < cfg.MaxConnections; i += 1 {
 		go func() {
 			for {
 				task := <-taskChannel
@@ -27,19 +29,19 @@ func StartScheduler() {
 				}
 				ctx, cancel := context.WithCancel(context.TODO())
 				cancellations.Store(task.ID, cancel)
-				options := &DownloadOptions{
-					updateSize: func(size uint64) {
+				options := &downloader.DownloadOptions{
+					UpdateSize: func(size uint64) {
 						task.Size = size
 						database.DB.Save(task)
 					},
-					onProgress: func(size uint64) {
+					OnProgress: func(size uint64) {
 						go downloadProgress.Store(task.ID, size)
 					},
 				}
 
 				task.Status = entities.Downloading
 				database.DB.Save(task)
-				if err := downloader.Download(ctx, task, options); err != nil {
+				if err := dl.Download(ctx, task, options); err != nil {
 					task.Status = entities.Error
 					database.DB.Save(task)
 				}
@@ -51,12 +53,20 @@ func StartScheduler() {
 			}
 		}()
 	}
+
+	var pendingTasks []entities.DownloadTask
+	database.DB.Where("status = ?", entities.Pending).Find(&pendingTasks)
+	for _, task := range pendingTasks {
+		taskChannel <- &task
+	}
 }
 
 func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
+	cfg := config.GetConfig()
+
 	task := &entities.DownloadTask{
 		URL:    request.URL,
-		Path:   request.Path,
+		Path:   path.Join(cfg.DownloadDir, request.Path),
 		Status: entities.Pending,
 	}
 	database.DB.Create(task)

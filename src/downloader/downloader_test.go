@@ -1,9 +1,10 @@
-package handlers
+package downloader
 
 import (
 	"AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/web/handlers"
 	"context"
 	"os"
 	"path"
@@ -76,7 +77,7 @@ func TestMain(m *testing.M) {
 	database.InitDB("file::memory:?cache=shared")
 	config.InitConfig()
 
-	StartScheduler()
+	handlers.StartScheduler()
 
 	_ = os.RemoveAll("temp")
 	code := m.Run()

@@ -1,4 +1,4 @@
-package handlers
+package downloader
 
 import (
 	"AwesomeDownloader/src/database/entities"
@@ -14,8 +14,8 @@ import (
 )
 
 type DownloadOptions struct {
-	updateSize func(size uint64)
-	onProgress func(size uint64)
+	UpdateSize func(size uint64)
+	OnProgress func(size uint64)
 	header     map[string]string
 }
 
@@ -71,8 +71,8 @@ func (d *Downloader) Download(ctx context.Context, task *entities.DownloadTask, 
 	if err != nil {
 		return err
 	}
-	if options != nil && options.updateSize != nil {
-		options.updateSize(length)
+	if options != nil && options.UpdateSize != nil {
+		options.UpdateSize(length)
 	}
 
 	downloadRequest, err := http.NewRequest("GET", task.URL, nil)
@@ -114,7 +114,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.DownloadTask, 
 		Size: uint64(stat.Size()),
 	}
 	if options != nil {
-		counter.OnProgress = options.onProgress
+		counter.OnProgress = options.OnProgress
 	}
 
 	_, err = io.Copy(file, io.TeeReader(response.Body, &counter))
