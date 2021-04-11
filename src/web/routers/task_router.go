@@ -13,7 +13,7 @@ func mountDownload(router *gin.RouterGroup) {
 	task.POST("/add", addTask)
 	task.POST("/remove/:id", removeTask)
 	task.POST("/pause/:id", pauseTask)
-	task.POST("/unPause/:id", unPauseTask)
+	task.POST("/unpause/:id", unpauseTask)
 	task.POST("/cancel/:id", cancelTask)
 }
 
@@ -54,7 +54,7 @@ func pauseTask(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, "")
 }
 
-func unPauseTask(ctx *gin.Context) {
+func unpauseTask(ctx *gin.Context) {
 	id, err := utils.ExtractID(ctx)
 	if err != nil {
 		utils.RespondError(ctx, utils.InvalidID)
