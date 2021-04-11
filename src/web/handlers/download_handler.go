@@ -5,9 +5,9 @@ import (
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/downloader"
+	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"context"
-	"path"
 	"sync"
 )
 
@@ -62,11 +62,10 @@ func StartScheduler() {
 }
 
 func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
-	cfg := config.GetConfig()
 
 	task := &entities.DownloadTask{
 		URL:    request.URL,
-		Path:   path.Join(cfg.DownloadDir, request.Path),
+		Path:   utils.GetDownloadPath(request.Path),
 		Status: entities.Pending,
 	}
 	database.DB.Create(task)

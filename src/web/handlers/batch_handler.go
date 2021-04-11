@@ -3,6 +3,7 @@ package handlers
 import (
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"database/sql"
 	"log"
@@ -20,7 +21,7 @@ func AddBatch(request *models.BatchRequest) *entities.Batch {
 	for i, t := range request.Tasks {
 		tasks[i] = &entities.DownloadTask{
 			URL:    t.URL,
-			Path:   t.Path,
+			Path:   utils.GetDownloadPath(t.Path),
 			Size:   0,
 			Status: entities.Pending,
 			Batch: sql.NullInt64{

@@ -17,7 +17,7 @@ func mountBatchRouter(router *gin.RouterGroup) {
 }
 
 func addBatch(ctx *gin.Context) {
-	var batchRequest *models.BatchRequest
+	batchRequest := new(models.BatchRequest)
 	err := ctx.BindJSON(batchRequest)
 	if err != nil {
 		utils.RespondError(ctx, utils.InvalidBody)
