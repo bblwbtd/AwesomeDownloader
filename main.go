@@ -1,12 +1,13 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"AwesomeDownloader/src/web"
+	"fmt"
+)
 
 func main() {
-	app := gin.Default()
-	registerRouter(app)
-}
-
-func registerRouter(app *gin.Engine) {
-
+	err := web.StartWebServer()
+	if err != nil {
+		fmt.Print(err)
+	}
 }

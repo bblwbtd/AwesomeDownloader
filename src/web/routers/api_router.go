@@ -2,7 +2,7 @@ package routers
 
 import "github.com/gin-gonic/gin"
 
-func mountAPI(route *gin.Engine) {
+func MountAPI(route *gin.Engine) {
 	api := route.Group("/api")
 
 	mountDownload(api)
