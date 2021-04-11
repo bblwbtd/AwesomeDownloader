@@ -21,6 +21,6 @@ type DownloadTask struct {
 	URL    string        `json:"url" gorm:"index"`
 	Path   string        `json:"path"`
 	Size   uint64        `json:"size"`
-	Status string        `json:"status"`
+	Status string        `json:"status" gorm:"index"`
 	Batch  sql.NullInt64 `json:"batch" gorm:"index"`
 }
