@@ -14,6 +14,7 @@ func mountBatchRouter(router *gin.RouterGroup) {
 	batchRouter.POST("/remove/:id", removeBatch)
 	batchRouter.POST("/pause/:id", pauseBatch)
 	batchRouter.POST("/unpause/:id", unpause)
+	batchRouter.POST("/cancel/:id", cancelBatch)
 }
 
 func addBatch(ctx *gin.Context) {
@@ -58,6 +59,17 @@ func unpause(ctx *gin.Context) {
 	}
 
 	handlers.UnPauseBatch(id)
+
+	utils.RespondSuccess(ctx, nil)
+}
+
+func cancelBatch(ctx *gin.Context) {
+	id, err := utils.ExtractID(ctx)
+	if err != nil {
+		utils.RespondError(ctx, utils.InvalidID)
+	}
+
+	handlers.CancelBatch(id)
 
 	utils.RespondSuccess(ctx, nil)
 }
