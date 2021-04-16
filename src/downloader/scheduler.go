@@ -57,17 +57,17 @@ func StartScheduler() {
 }
 
 func resumeTasks() {
-	var pendingTasks []entities.DownloadTask
+	var pendingTasks []*entities.DownloadTask
 	database.DB.Where("status = ?", entities.Pending).Find(&pendingTasks)
 	for _, task := range pendingTasks {
-		TaskChannel <- &task
+		TaskChannel <- task
 	}
 
-	var downloadingTasks []entities.DownloadTask
+	var downloadingTasks []*entities.DownloadTask
 	database.DB.Where("status = ?", entities.Downloading).Find(&downloadingTasks)
 	for _, task := range downloadingTasks {
 		task.Status = entities.Pending
 		database.DB.Save(task)
-		TaskChannel <- &task
+		TaskChannel <- task
 	}
 }
