@@ -3,6 +3,7 @@ package handlers
 import (
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/downloader"
 	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"database/sql"
@@ -33,7 +34,7 @@ func AddBatch(request *models.BatchRequest) *entities.Batch {
 	database.DB.Save(tasks)
 
 	for _, task := range tasks {
-		taskChannel <- task
+		downloader.TaskChannel <- task
 	}
 
 	return batch
@@ -49,7 +50,7 @@ func RemoveBatch(id uint) {
 	for _, task := range tasks {
 		if task.Status == entities.Downloading {
 			cancel(id)
-			downloadProgress.Delete(task.ID)
+			downloader.DownloadProgress.Delete(task.ID)
 		}
 	}
 
@@ -89,7 +90,7 @@ func UnPauseBatch(id uint) {
 		if task.Status == entities.Paused {
 			task.Status = entities.Pending
 			database.DB.Save(task)
-			taskChannel <- &task
+			downloader.TaskChannel <- &task
 		}
 	}
 }
