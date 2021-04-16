@@ -14,6 +14,15 @@ func mountBatchRouter(router *gin.RouterGroup) {
 	batchRouter.POST("/remove/:id", removeBatch)
 	batchRouter.POST("/pause/:id", pauseBatch)
 	batchRouter.POST("/unpause/:id", unpause)
+	batchRouter.GET("/query", queryBatch)
+}
+
+func queryBatch(ctx *gin.Context) {
+	name := ctx.Query("name")
+
+	batch := handlers.QueryBatchByName(name)
+
+	utils.RespondSuccess(ctx, batch)
 }
 
 func addBatch(ctx *gin.Context) {

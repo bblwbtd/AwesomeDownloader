@@ -4,5 +4,5 @@ import "gorm.io/gorm"
 
 type Batch struct {
 	gorm.Model
-	Name string `json:"name"`
+	Name string `json:"name" gorm:"index"`
 }

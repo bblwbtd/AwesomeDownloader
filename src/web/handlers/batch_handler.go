@@ -10,6 +10,16 @@ import (
 	"log"
 )
 
+func QueryBatchByName(name string) *entities.Batch {
+	batch := new(entities.Batch)
+
+	if err := database.DB.First(batch, "name = ?", name).Error; err != nil {
+		return nil
+	}
+
+	return batch
+}
+
 func AddBatch(request *models.BatchRequest) *entities.Batch {
 
 	batch := &entities.Batch{
