@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func mountDownload(router *gin.RouterGroup) {
+func mountTaskRouter(router *gin.RouterGroup) {
 	task := router.Group("/task")
 
 	task.POST("/add", addTask)

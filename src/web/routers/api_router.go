@@ -5,6 +5,6 @@ import "github.com/gin-gonic/gin"
 func MountAPI(router *gin.Engine) {
 	api := router.Group("/api")
 
-	mountDownload(api)
+	mountTaskRouter(api)
 	mountBatchRouter(api)
 }
