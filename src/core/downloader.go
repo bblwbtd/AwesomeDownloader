@@ -1,10 +1,11 @@
-package downloader
+package core
 
 import (
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"context"
 	"fmt"
+	"github.com/reactivex/rxgo/v2"
 	"io"
 	"log"
 	"net/http"
@@ -15,34 +16,42 @@ import (
 )
 
 type DownloadOptions struct {
-	UpdateSize func(size uint64)
-	OnProgress func(size uint64)
+	UpdateSize func(task *entities.Task, size uint64)
+	OnProgress func(task *entities.Task, size uint64)
 	header     map[string]string
 }
 
-type WriteCounter struct {
-	Size       uint64
-	OnProgress func(size uint64)
-}
-
-func (w *WriteCounter) Write(p []byte) (n int, err error) {
-	length := len(p)
-	w.Size = w.Size + uint64(length)
-	if w.OnProgress != nil {
-		w.OnProgress(uint64(length))
-	}
-	return length, nil
-}
-
 type Downloader struct {
-	client *http.Client
+	client      *http.Client
+	taskChannel chan rxgo.Item
 }
 
 func NewDownloader() *Downloader {
 	downloader := &Downloader{
 		client: http.DefaultClient,
 	}
+
+	downloader.subscribeTaskChannel()
+
 	return downloader
+}
+
+func (d *Downloader) subscribeTaskChannel() {
+	rxgo.FromChannel(d.taskChannel).Map(func(_ context.Context, i interface{}) (interface{}, error) {
+		decoratedTask := i.(*TaskDecorator)
+		if err := decoratedTask.setTaskStatus(Downloading); err != nil {
+			return nil, err
+		}
+
+		context.WithCancel(context.TODO())
+
+	}).ForEach(func(i interface{}) {
+
+	}, func(err error) {
+		log.Println(err)
+	}, func() {
+		log.Println("Task channel closed")
+	})
 }
 
 func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
@@ -75,7 +84,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 		return err
 	}
 	if options != nil && options.UpdateSize != nil {
-		options.UpdateSize(length)
+		options.UpdateSize(task, length)
 	}
 
 	downloadRequest, err := http.NewRequest("GET", task.URL, nil)
@@ -110,11 +119,17 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println("body close error")
+		}
+	}(response.Body)
 
 	stat, _ = file.Stat()
-	counter := WriteCounter{
+	counter := writeCounter{
 		Size: uint64(stat.Size()),
+		task: task,
 	}
 	if options != nil {
 		counter.OnProgress = options.OnProgress

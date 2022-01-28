@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"AwesomeDownloader/src/core"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
-	"AwesomeDownloader/src/downloader"
 	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"context"
@@ -18,14 +18,14 @@ func AddTask(request *models.DownloadRequest) *entities.Task {
 	}
 	database.DB.Create(task)
 	go func() {
-		downloader.TaskChannel <- task
+		core.TaskChannel <- task
 	}()
 
 	return task
 }
 
 func RemoveTask(id uint) {
-	downloader.DownloadProgress.Delete(id)
+	core.DownloadProgress.Delete(id)
 	cancel(id)
 	database.DB.Delete(&entities.Task{}, id)
 }
@@ -46,7 +46,7 @@ func UnPauseTask(id uint) {
 	database.DB.Save(task)
 
 	go func() {
-		downloader.TaskChannel <- task
+		core.TaskChannel <- task
 	}()
 }
 
@@ -57,7 +57,7 @@ func CancelTask(id uint) {
 }
 
 func cancel(id uint) {
-	if cancel, loaded := downloader.Cancellations.LoadAndDelete(id); loaded {
+	if cancel, loaded := core.Cancellations.LoadAndDelete(id); loaded {
 		if cancelFun, ok := cancel.(context.CancelFunc); ok {
 			cancelFun()
 		}
