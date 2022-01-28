@@ -34,7 +34,7 @@ func NewBatch() *entities.Batch {
 func TestAddBatch(t *testing.T) {
 	batch := NewBatch()
 
-	var tasks []entities.DownloadTask
+	var tasks []entities.Task
 
 	err := database.DB.Where("batch = ?", batch.ID).Find(&tasks).Error
 	if err != nil {
@@ -54,7 +54,7 @@ func TestPauseBatch(t *testing.T) {
 
 	PauseBatch(batch.ID)
 
-	var tasks []entities.DownloadTask
+	var tasks []entities.Task
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 
 	for _, task := range tasks {
@@ -75,7 +75,7 @@ func TestUnPauseBatch(t *testing.T) {
 
 	UnPauseBatch(batch.ID)
 
-	var tasks []entities.DownloadTask
+	var tasks []entities.Task
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 
 	for _, task := range tasks {

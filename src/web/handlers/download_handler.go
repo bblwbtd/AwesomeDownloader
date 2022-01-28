@@ -9,9 +9,9 @@ import (
 	"context"
 )
 
-func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
+func AddTask(request *models.DownloadRequest) *entities.Task {
 
-	task := &entities.DownloadTask{
+	task := &entities.Task{
 		URL:    request.URL,
 		Path:   utils.GetDownloadPath(request.Path),
 		Status: entities.Pending,
@@ -27,16 +27,16 @@ func AddTask(request *models.DownloadRequest) *entities.DownloadTask {
 func RemoveTask(id uint) {
 	downloader.DownloadProgress.Delete(id)
 	cancel(id)
-	database.DB.Delete(&entities.DownloadTask{}, id)
+	database.DB.Delete(&entities.Task{}, id)
 }
 
 func PauseTask(id uint) {
 	cancel(id)
-	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Paused)
+	database.DB.Model(&entities.Task{}).Where("id = ?", id).Update("status", entities.Paused)
 }
 
 func UnPauseTask(id uint) {
-	task := new(entities.DownloadTask)
+	task := new(entities.Task)
 	err := database.DB.Take(task, id).Error
 	if err != nil {
 		return
@@ -53,7 +53,7 @@ func UnPauseTask(id uint) {
 func CancelTask(id uint) {
 	cancel(id)
 
-	database.DB.Model(&entities.DownloadTask{}).Where("id = ?", id).Update("status", entities.Canceled)
+	database.DB.Model(&entities.Task{}).Where("id = ?", id).Update("status", entities.Canceled)
 }
 
 func cancel(id uint) {

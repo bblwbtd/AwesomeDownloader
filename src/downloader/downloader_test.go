@@ -15,7 +15,7 @@ var ctx = context.Background()
 
 func TestDownload(t *testing.T) {
 
-	task := &entities.DownloadTask{
+	task := &entities.Task{
 		URL:  "https://pic.netbian.com/uploads/allimg/170424/104135-14930016950de4.jpg",
 		Path: path.Join("temp", "test.jpg"),
 	}
@@ -36,7 +36,7 @@ func TestDownload(t *testing.T) {
 
 func TestDownloadBreakPoint(t *testing.T) {
 
-	task := &entities.DownloadTask{
+	task := &entities.Task{
 		URL:  "https://pic.netbian.com/uploads/allimg/170424/104135-14930016950de4.jpg",
 		Path: path.Join("temp", "test1.jpg"),
 	}

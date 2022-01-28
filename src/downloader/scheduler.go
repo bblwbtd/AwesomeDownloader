@@ -4,22 +4,52 @@ import (
 	"AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"Go/AwesomeDownloader/vendor/github.com/reactivex/rxgo/v2"
 	"context"
-	"sync"
+	"github.com/reactivex/rxgo/v2"
+	"log"
 )
 
 var (
-	TaskChannel      = make(chan *entities.DownloadTask, 1024)
-	Cancellations    = sync.Map{}
-	DownloadProgress = sync.Map{}
+	TaskChannel      = make(chan rxgo.Item)
+	Cancellations    = make(map[uint]context.CancelFunc)
+	DownloadProgress = make(map[uint]uint64)
 	downloader       = NewDownloader()
 )
+
+func fetchTaskFromDB(_ context.Context, i interface{}) (interface{}, error) {
+
+}
+
+func observeTaskChannel() {
+	cfg := config.GetConfig()
+
+	rxgo.FromChannel(TaskChannel).Map(func(ctx context.Context, i interface{}) (interface{}, error) {
+		task := i.(*entities.Task)
+		tx := database.DB.Take(task)
+		if tx.Error != nil {
+			task.Status = entities.Error
+			log.Println(tx.Error.Error())
+			return nil, tx.Error
+		}
+		return task, nil
+	}).ForEach(func(i interface{}) {
+		task := i.(*entities.Task)
+		ctx, cancel := context.WithCancel(context.TODO())
+
+	}, func(err error) {
+
+	}, func() {
+
+	}, rxgo.WithPool(cfg.MaxConnections))
+}
 
 func StartScheduler() {
 	cfg := config.GetConfig()
 
 	for i := 0; i < cfg.MaxConnections; i += 1 {
 		go func() {
+
 			for {
 				task := <-TaskChannel
 				database.DB.Take(task)
@@ -27,14 +57,14 @@ func StartScheduler() {
 					continue
 				}
 				ctx, cancel := context.WithCancel(context.TODO())
-				Cancellations.Store(task.ID, cancel)
+				Cancellations[task.ID] = cancel
 				options := &DownloadOptions{
 					UpdateSize: func(size uint64) {
 						task.Size = size
 						database.DB.Save(task)
 					},
 					OnProgress: func(size uint64) {
-						go DownloadProgress.Store(task.ID, size)
+						DownloadProgress[task.ID] = size
 					},
 				}
 
@@ -48,7 +78,7 @@ func StartScheduler() {
 				task.Status = entities.Finished
 				database.DB.Save(task)
 
-				Cancellations.Delete(task.ID)
+				delete(Cancellations, task.ID)
 			}
 		}()
 	}
@@ -57,13 +87,13 @@ func StartScheduler() {
 }
 
 func resumeTasks() {
-	var pendingTasks []*entities.DownloadTask
+	var pendingTasks []*entities.Task
 	database.DB.Where("status = ?", entities.Pending).Find(&pendingTasks)
 	for _, task := range pendingTasks {
 		TaskChannel <- task
 	}
 
-	var downloadingTasks []*entities.DownloadTask
+	var downloadingTasks []*entities.Task
 	database.DB.Where("status = ?", entities.Downloading).Find(&downloadingTasks)
 	for _, task := range downloadingTasks {
 		task.Status = entities.Pending

@@ -16,7 +16,7 @@ const (
 	Error       DownloadStatus = "Error"
 )
 
-type DownloadTask struct {
+type Task struct {
 	gorm.Model
 	URL    string        `json:"url" gorm:"index"`
 	Path   string        `json:"path"`

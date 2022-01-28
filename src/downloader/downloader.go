@@ -62,7 +62,7 @@ func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
 	return contentLength, nil
 }
 
-func (d *Downloader) Download(ctx context.Context, task *entities.DownloadTask, options *DownloadOptions) error {
+func (d *Downloader) Download(ctx context.Context, task *entities.Task, options *DownloadOptions) error {
 	log.Println("Begin downloading:", task.URL, task.Path)
 	defer log.Println("Finish downloading:", task.URL, task.Path)
 	URL, err := url.Parse(task.URL)

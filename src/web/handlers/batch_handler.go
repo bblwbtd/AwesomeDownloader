@@ -28,9 +28,9 @@ func AddBatch(request *models.BatchRequest) *entities.Batch {
 
 	database.DB.Save(batch)
 
-	tasks := make([]*entities.DownloadTask, len(request.Tasks))
+	tasks := make([]*entities.Task, len(request.Tasks))
 	for i, t := range request.Tasks {
-		tasks[i] = &entities.DownloadTask{
+		tasks[i] = &entities.Task{
 			URL:    t.URL,
 			Path:   utils.GetDownloadPath(t.Path),
 			Size:   0,
@@ -54,7 +54,7 @@ func RemoveBatch(id uint) {
 	batch := &entities.Batch{}
 	database.DB.Take(batch, id)
 
-	var tasks []*entities.DownloadTask
+	var tasks []*entities.Task
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 
 	for _, task := range tasks {
@@ -72,7 +72,7 @@ func PauseBatch(id uint) {
 	batch := &entities.Batch{}
 	database.DB.Take(batch, id)
 
-	var tasks []*entities.DownloadTask
+	var tasks []*entities.Task
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 	taskID := make([]uint, len(tasks))
 
@@ -93,7 +93,7 @@ func UnPauseBatch(id uint) {
 	batch := &entities.Batch{}
 	database.DB.Take(batch, id)
 
-	var tasks []*entities.DownloadTask
+	var tasks []*entities.Task
 	database.DB.Where("batch = ?", batch.ID).Find(&tasks)
 
 	for _, task := range tasks {
@@ -107,7 +107,7 @@ func UnPauseBatch(id uint) {
 
 func CancelBatch(id uint) {
 
-	var tasks []*entities.DownloadTask
+	var tasks []*entities.Task
 	database.DB.Where("batch = ? and status = 'Downloading'", id).Find(&tasks)
 
 	for _, task := range tasks {
