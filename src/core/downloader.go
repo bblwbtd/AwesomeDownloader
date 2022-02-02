@@ -1,6 +1,7 @@
 package core
 
 import (
+	"AwesomeDownloader/src/config"
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"context"
@@ -16,14 +17,15 @@ import (
 )
 
 type DownloadOptions struct {
-	UpdateSize func(task *entities.Task, size uint64)
-	OnProgress func(task *entities.Task, size uint64)
+	UpdateSize func(size uint64)
+	OnProgress func(size uint64)
 	header     map[string]string
 }
 
 type Downloader struct {
 	client      *http.Client
 	taskChannel chan rxgo.Item
+	taskMap     map[uint]*TaskDecorator
 }
 
 func NewDownloader() *Downloader {
@@ -31,27 +33,81 @@ func NewDownloader() *Downloader {
 		client: http.DefaultClient,
 	}
 
-	downloader.subscribeTaskChannel()
+	downloader.SubscribeTaskChannel()
 
 	return downloader
 }
 
-func (d *Downloader) subscribeTaskChannel() {
+func (d *Downloader) SubscribeTaskChannel() {
+	cfg := config.GetConfig()
+
 	rxgo.FromChannel(d.taskChannel).Map(func(_ context.Context, i interface{}) (interface{}, error) {
 		decoratedTask := i.(*TaskDecorator)
-		if err := decoratedTask.setTaskStatus(Downloading); err != nil {
+		if err := decoratedTask.SetTaskStatus(Downloading); err != nil {
 			return nil, err
 		}
 
-		context.WithCancel(context.TODO())
+		d.taskMap[decoratedTask.entity.ID] = decoratedTask
 
-	}).ForEach(func(i interface{}) {
+		options := &DownloadOptions{
+			UpdateSize: func(size uint64) {
+				err := decoratedTask.SetTaskSize(size)
+				if err != nil {
+					log.Println("Fail to update task size:", err)
+					return
+				}
+			},
+			OnProgress: func(size uint64) {
+				decoratedTask.SetDownloadedSize(size)
+			},
+		}
+
+		if err := d.Download(decoratedTask.ctx, decoratedTask.entity, options); err != nil {
+			log.Println("Download error:", err)
+			if err := decoratedTask.SetTaskStatus(Error); err != nil {
+				log.Println("Failed to update task size:", err)
+				return nil, err
+			}
+			return decoratedTask, nil
+		}
+
+		if err := decoratedTask.SetTaskStatus(Finished); err != nil {
+			log.Println("Fail to update task status", err)
+			return nil, err
+		}
+
+		return decoratedTask, nil
+	}, rxgo.WithPool(cfg.MaxConnections)).ForEach(func(i interface{}) {
+		decoratedTask := i.(*TaskDecorator)
+
+		status, err := decoratedTask.GetTaskStatus()
+		if err != nil {
+			log.Println("Failed to access task status", err)
+		}
+
+		decoratedTask.cancel()
+
+		if status == Error && decoratedTask.retryCount < cfg.MaxRetry {
+			if err := decoratedTask.SetTaskStatus(Pending); err != nil {
+				log.Println("Failed to update task status", err)
+			}
+			decoratedTask.retryCount += 1
+
+		} else if status == Finished {
+			if err := decoratedTask.SetTaskStatus(Finished); err != nil {
+				log.Println("Failed to update task status", err)
+			}
+		}
 
 	}, func(err error) {
 		log.Println(err)
 	}, func() {
 		log.Println("Task channel closed")
-	})
+	}, rxgo.WithPool(cfg.MaxConnections))
+}
+
+func (d *Downloader) enqueue(task *TaskDecorator) {
+	d.taskChannel <- rxgo.Of(task)
 }
 
 func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
@@ -84,7 +140,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 		return err
 	}
 	if options != nil && options.UpdateSize != nil {
-		options.UpdateSize(task, length)
+		options.UpdateSize(length)
 	}
 
 	downloadRequest, err := http.NewRequest("GET", task.URL, nil)
@@ -129,7 +185,6 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 	stat, _ = file.Stat()
 	counter := writeCounter{
 		Size: uint64(stat.Size()),
-		task: task,
 	}
 	if options != nil {
 		counter.OnProgress = options.OnProgress

@@ -15,6 +15,7 @@ type Proxy struct {
 
 type Config struct {
 	MaxConnections int    `json:"max_connections"`
+	MaxRetry       int    `json:"max_retry"`
 	DownloadDir    string `json:"download_dir"`
 	Port           int    `json:"port"`
 	Host           string `json:"host"`
@@ -26,6 +27,7 @@ var defaultConfig = &Config{
 	DownloadDir:    "downloads",
 	Port:           1234,
 	Host:           "0.0.0.0",
+	MaxRetry:       3,
 }
 
 var config *Config

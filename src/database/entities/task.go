@@ -10,5 +10,4 @@ type Task struct {
 	Path   string `json:"path"`
 	Size   uint64 `json:"size"`
 	Status string `json:"status" gorm:"index"`
-	Batch  Batch  `json:"batch" gorm:"index;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
