@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"AwesomeDownloader/src/core"
 	"AwesomeDownloader/src/database"
-	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/web/models"
 	"os"
 	"path"
@@ -41,7 +41,7 @@ func TestAddTask(t *testing.T) {
 		return
 	}
 
-	if task.Status != entities.Finished {
+	if task.Status != core.Finished {
 		t.Error("should finished")
 	}
 }
@@ -58,7 +58,7 @@ func TestPauseTask(t *testing.T) {
 	PauseTask(task.ID)
 
 	database.DB.Take(task)
-	if task.Status != entities.Paused {
+	if task.Status != core.Paused {
 		t.Error("status is not paused")
 	}
 }
@@ -75,7 +75,7 @@ func TestCancelTask(t *testing.T) {
 	CancelTask(task.ID)
 
 	database.DB.Take(task)
-	if task.Status != entities.Canceled {
+	if task.Status != core.Canceled {
 		t.Error("status is not paused")
 	}
 }
@@ -108,7 +108,7 @@ func TestUnPauseTask(t *testing.T) {
 	PauseTask(task.ID)
 
 	database.DB.Take(task)
-	if task.Status != entities.Paused {
+	if task.Status != core.Paused {
 		t.Error("status is not paused")
 	}
 
@@ -117,7 +117,7 @@ func TestUnPauseTask(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	database.DB.Take(task)
-	if task.Status != entities.Downloading {
+	if task.Status != core.Downloading {
 		t.Error("status is not downloading")
 	}
 }

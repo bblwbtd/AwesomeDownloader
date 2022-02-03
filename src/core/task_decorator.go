@@ -4,6 +4,8 @@ import (
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
 	"context"
+	"log"
+	"os"
 )
 
 type TaskDecorator struct {
@@ -58,5 +60,11 @@ func (d *TaskDecorator) SetTaskSize(size uint64) error {
 func (d *TaskDecorator) Cancel() {
 	if d.cancel != nil {
 		d.cancel()
+	}
+
+	err := os.Remove(d.entity.Path)
+	if err != nil {
+		log.Println("Error occur while removing:", d.entity.Path)
+		return
 	}
 }

@@ -6,5 +6,4 @@ func MountAPI(router *gin.Engine) {
 	api := router.Group("/api")
 
 	mountTaskRouter(api)
-	mountBatchRouter(api)
 }

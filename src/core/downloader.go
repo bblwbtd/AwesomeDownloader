@@ -2,11 +2,13 @@ package core
 
 import (
 	"AwesomeDownloader/src/config"
+	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"context"
 	"fmt"
 	"github.com/reactivex/rxgo/v2"
+	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
@@ -30,7 +32,9 @@ type Downloader struct {
 
 func NewDownloader() *Downloader {
 	downloader := &Downloader{
-		client: http.DefaultClient,
+		client:      http.DefaultClient,
+		taskChannel: make(chan rxgo.Item, 256),
+		taskMap:     make(map[uint]*TaskDecorator),
 	}
 
 	downloader.SubscribeTaskChannel()
@@ -106,8 +110,13 @@ func (d *Downloader) SubscribeTaskChannel() {
 	}, rxgo.WithPool(cfg.MaxConnections))
 }
 
-func (d *Downloader) enqueue(task *TaskDecorator) {
-	d.taskChannel <- rxgo.Of(task)
+func (d *Downloader) Enqueue(task *entities.Task) error {
+	decoratedTask := NewDecoratedTask(task)
+	if err := database.DB.Create(task).Error; err != nil {
+		return err
+	}
+	d.taskChannel <- rxgo.Of(decoratedTask)
+	return nil
 }
 
 func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
@@ -193,4 +202,60 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 	_, err = io.Copy(file, io.TeeReader(response.Body, &counter))
 
 	return err
+}
+
+func (d *Downloader) DeleteTasks(taskIDs []uint) error {
+	tasks := make([]*entities.Task, len(taskIDs))
+
+	for index, id := range taskIDs {
+		task := d.taskMap[id]
+		if task != nil {
+			task.Cancel()
+			delete(d.taskMap, id)
+		}
+		tasks[index] = task.entity
+	}
+
+	return database.DB.Delete(tasks).Error
+}
+
+func (d *Downloader) PauseTasks(taskIDs []uint) error {
+
+	for _, id := range taskIDs {
+		task := d.taskMap[id]
+		if task != nil {
+			task.Cancel()
+		}
+	}
+
+	return database.DB.Model(entities.Task{}).Where("id in ?", taskIDs).Update("status", Paused).Error
+}
+
+func (d *Downloader) UnPauseTasks(taskIDs []uint) error {
+	var tasks []entities.Task
+
+	if err := database.DB.Transaction(func(tx *gorm.DB) error {
+		tx.Model(&entities.Task{}).Where(taskIDs).Update("status", Pending)
+		tx.Where(taskIDs).Find(&tasks)
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	for _, task := range tasks {
+		d.Enqueue(&task)
+	}
+
+	return nil
+}
+
+func (d *Downloader) CancelTasks(taskIDs []uint) error {
+	for _, id := range taskIDs {
+		task := d.taskMap[id]
+		if task != nil {
+			task.Cancel()
+		}
+	}
+
+	return database.DB.Model(&entities.Task{}).Where(taskIDs).Update("status", Canceled).Error
 }

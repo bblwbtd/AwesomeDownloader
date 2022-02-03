@@ -18,7 +18,7 @@ func InitDB(dsn string) {
 	if err != nil {
 		log.Panic(err)
 	}
-	err = DB.AutoMigrate(&entities.Task{}, &entities.Batch{})
+	err = DB.AutoMigrate(&entities.Task{})
 	if err != nil {
 		log.Panic(err)
 	}

@@ -73,10 +73,12 @@ func TestDownloadBreakPoint(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	database.InitDB("file::memory:?cache=shared")
+	_ = os.RemoveAll("temp")
+	_ = os.Mkdir("temp", 0777)
+
+	database.InitDB("temp/test.db")
 	config.InitConfig()
 
-	_ = os.RemoveAll("temp")
 	code := m.Run()
 	_ = os.RemoveAll("temp")
 
