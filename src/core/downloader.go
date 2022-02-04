@@ -21,20 +21,20 @@ import (
 type DownloadOptions struct {
 	UpdateSize func(size uint64)
 	OnProgress func(size uint64)
-	header     map[string]string
+	Headers    map[string]string
 }
 
 type Downloader struct {
 	client      *http.Client
 	taskChannel chan rxgo.Item
-	taskMap     map[uint]*TaskDecorator
+	taskMap     map[uint]*taskDecorator
 }
 
 func NewDownloader() *Downloader {
 	downloader := &Downloader{
 		client:      http.DefaultClient,
 		taskChannel: make(chan rxgo.Item, 256),
-		taskMap:     make(map[uint]*TaskDecorator),
+		taskMap:     make(map[uint]*taskDecorator),
 	}
 
 	downloader.SubscribeTaskChannel()
@@ -46,7 +46,7 @@ func (d *Downloader) SubscribeTaskChannel() {
 	cfg := config.GetConfig()
 
 	rxgo.FromChannel(d.taskChannel).Map(func(_ context.Context, i interface{}) (interface{}, error) {
-		decoratedTask := i.(*TaskDecorator)
+		decoratedTask := i.(*taskDecorator)
 		if err := decoratedTask.SetTaskStatus(Downloading); err != nil {
 			return nil, err
 		}
@@ -64,6 +64,7 @@ func (d *Downloader) SubscribeTaskChannel() {
 			OnProgress: func(size uint64) {
 				decoratedTask.SetDownloadedSize(size)
 			},
+			Headers: decoratedTask.headers,
 		}
 
 		if err := d.Download(decoratedTask.ctx, decoratedTask.entity, options); err != nil && err != context.Canceled {
@@ -82,7 +83,7 @@ func (d *Downloader) SubscribeTaskChannel() {
 
 		return decoratedTask, nil
 	}, rxgo.WithPool(cfg.MaxConnections)).ForEach(func(i interface{}) {
-		decoratedTask := i.(*TaskDecorator)
+		decoratedTask := i.(*taskDecorator)
 
 		status, err := decoratedTask.GetTaskStatus()
 		if err != nil {
@@ -110,16 +111,17 @@ func (d *Downloader) SubscribeTaskChannel() {
 	})
 }
 
-func (d *Downloader) CreateAndEnqueue(task *entities.Task) error {
+func (d *Downloader) CreateAndEnqueue(task *entities.Task, headers map[string]string) error {
 	if err := database.DB.Create(task).Error; err != nil {
 		return err
 	}
-	d.Enqueue(task)
+	d.Enqueue(task, headers)
 	return nil
 }
 
-func (d *Downloader) Enqueue(task *entities.Task) {
+func (d *Downloader) Enqueue(task *entities.Task, headers map[string]string) {
 	decoratedTask := NewDecoratedTask(task)
+	decoratedTask.headers = headers
 	d.taskChannel <- rxgo.Of(decoratedTask)
 }
 
@@ -182,8 +184,8 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 		return err
 	}
 
-	if options != nil && options.header != nil {
-		utils.MergeHeader(downloadRequest, options.header)
+	if options != nil && options.Headers != nil {
+		utils.MergeHeaders(downloadRequest, options.Headers)
 	}
 	response, err := d.client.Do(downloadRequest)
 	if err != nil {
@@ -254,7 +256,7 @@ func (d *Downloader) UnpauseTasks(taskIDs []uint) error {
 	}
 
 	for _, task := range tasks {
-		d.Enqueue(&task)
+		d.Enqueue(&task, nil)
 	}
 
 	return nil

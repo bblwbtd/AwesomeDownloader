@@ -41,7 +41,7 @@ func TestDownloadBreakPoint(t *testing.T) {
 	}
 
 	options := &DownloadOptions{
-		header: map[string]string{
+		Headers: map[string]string{
 			"range": "bytes=0-150",
 		},
 	}

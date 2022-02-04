@@ -8,29 +8,30 @@ import (
 	"os"
 )
 
-type TaskDecorator struct {
+type taskDecorator struct {
 	entity         *entities.Task
 	cancel         context.CancelFunc
 	ctx            context.Context
 	downloadedSize uint64
 	retryCount     int
+	headers        map[string]string
 }
 
-func NewDecoratedTask(entity *entities.Task) *TaskDecorator {
+func NewDecoratedTask(entity *entities.Task) *taskDecorator {
 	ctx, cancel := context.WithCancel(context.TODO())
 
-	return &TaskDecorator{entity: entity, cancel: cancel, ctx: ctx}
+	return &taskDecorator{entity: entity, cancel: cancel, ctx: ctx}
 }
 
-func (d *TaskDecorator) GetDownloadedSize() uint64 {
+func (d *taskDecorator) GetDownloadedSize() uint64 {
 	return d.downloadedSize
 }
 
-func (d *TaskDecorator) SetDownloadedSize(downloadedSize uint64) {
+func (d *taskDecorator) SetDownloadedSize(downloadedSize uint64) {
 	d.downloadedSize = downloadedSize
 }
 
-func (d *TaskDecorator) GetTaskStatus() (DownloadStatus, error) {
+func (d *taskDecorator) GetTaskStatus() (DownloadStatus, error) {
 	if tx := database.DB.Take(d.entity); tx.Error != nil {
 		return Unknown, tx.Error
 	}
@@ -38,7 +39,7 @@ func (d *TaskDecorator) GetTaskStatus() (DownloadStatus, error) {
 	return d.entity.Status, nil
 }
 
-func (d *TaskDecorator) SetTaskStatus(status DownloadStatus) error {
+func (d *taskDecorator) SetTaskStatus(status DownloadStatus) error {
 	d.entity.Status = status
 	if tx := database.DB.Save(d.entity); tx.Error != nil {
 		return tx.Error
@@ -47,7 +48,7 @@ func (d *TaskDecorator) SetTaskStatus(status DownloadStatus) error {
 	return nil
 }
 
-func (d *TaskDecorator) SetTaskSize(size uint64) error {
+func (d *taskDecorator) SetTaskSize(size uint64) error {
 	d.entity.Size = size
 	if tx := database.DB.Save(d.entity); tx.Error != nil {
 		return tx.Error
@@ -57,7 +58,7 @@ func (d *TaskDecorator) SetTaskSize(size uint64) error {
 
 }
 
-func (d *TaskDecorator) Cancel() {
+func (d *taskDecorator) Cancel() {
 	if d.cancel != nil {
 		d.cancel()
 	}

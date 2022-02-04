@@ -19,7 +19,7 @@ func AddTasks(downloader *core.Downloader, taskMetas []*models.TaskMeta) []*enti
 			Status: core.Pending,
 		}
 		tasks[index] = task
-		err := downloader.CreateAndEnqueue(task)
+		err := downloader.CreateAndEnqueue(task, meta.Headers)
 		if err != nil {
 			log.Println("Error occur while add tasks:", err)
 		}
