@@ -3,6 +3,7 @@ package handlers
 import (
 	"AwesomeDownloader/src/core"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"log"
 )
@@ -14,7 +15,7 @@ func AddTasks(downloader *core.Downloader, taskMetas []*models.TaskMeta) []*enti
 	for index, meta := range taskMetas {
 		task := &entities.Task{
 			URL:    meta.URL,
-			Path:   meta.Path,
+			Path:   utils.GetDownloadPath(meta.Path),
 			Status: core.Pending,
 		}
 		tasks[index] = task

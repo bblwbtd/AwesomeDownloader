@@ -5,8 +5,10 @@ import (
 	"path"
 )
 
-func GetDownloadPath(p string) string {
+func GetDownloadPath(p ...string) string {
 	cfg := config.GetConfig()
 
-	return path.Join(cfg.DownloadDir, p)
+	paths := append([]string{cfg.DownloadDir}, p...)
+
+	return path.Join(paths...)
 }

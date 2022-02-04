@@ -1,7 +1,7 @@
 temp
 .idea
 .DS_Store
-/data.db
+data.db
 vendor
 downloads
 config.json

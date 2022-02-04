@@ -5,6 +5,7 @@ import (
 	"AwesomeDownloader/src/core"
 	"AwesomeDownloader/src/database"
 	"AwesomeDownloader/src/database/entities"
+	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
 	"os"
 	"path"
@@ -25,25 +26,13 @@ func addTask(url string, filePath string) []*entities.Task {
 	})
 }
 
-func TestStartScheduler(t *testing.T) {
-	filePath := path.Join("temp", "scheduler.jpg")
-
-	addTask(ImageURL, filePath)
-
-	time.Sleep(3 * time.Second)
-
-	if _, err := os.Stat(filePath); err != nil {
-		t.Error(err)
-	}
-}
-
 func TestAddTask(t *testing.T) {
 	filePath := path.Join("temp", "addTask.jpg")
 	tasks := addTask(ImageURL, filePath)
 
 	time.Sleep(3 * time.Second)
 
-	if _, err := os.Stat(filePath); err != nil {
+	if _, err := os.Stat(utils.GetDownloadPath(filePath)); err != nil {
 		t.Error(err)
 		return
 	}
@@ -105,7 +94,7 @@ func TestRemoveTask(t *testing.T) {
 	}
 }
 
-func TestUnPauseTask(t *testing.T) {
+func TestUnpauseTask(t *testing.T) {
 	filePath := path.Join("temp", "pause.pkg")
 	task := addTask(LargeFileURL, filePath)[0]
 
@@ -147,6 +136,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	_ = os.RemoveAll("temp")
+	_ = os.RemoveAll("downloads")
 
 	os.Exit(code)
 }

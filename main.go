@@ -11,7 +11,7 @@ func main() {
 	config.InitConfig("config.json")
 	database.InitDB("data.db")
 
-	err := web.StartWebServer()
+	err := web.Start()
 	if err != nil {
 		fmt.Print(err)
 	}

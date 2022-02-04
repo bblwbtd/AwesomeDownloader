@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StartWebServer() error {
+func Start() error {
 	cfg := config.GetConfig()
 
 	server := gin.Default()
