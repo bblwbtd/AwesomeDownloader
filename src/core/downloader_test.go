@@ -76,13 +76,11 @@ func TestMain(m *testing.M) {
 	_ = os.RemoveAll("temp")
 	_ = os.Mkdir("temp", 0777)
 
-	database.InitDB("temp/test.db")
-	config.InitConfig()
+	config.InitConfig(path.Join("temp", "config.json"))
+	database.InitDB(path.Join("temp", "config.json"))
 
 	code := m.Run()
 	_ = os.RemoveAll("temp")
-
-	config.RemoveConfig()
 
 	os.Exit(code)
 }

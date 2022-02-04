@@ -9,12 +9,14 @@ const (
 	InvalidBody
 	InvalidID
 	ExecutionError
+	RuntimeError
 )
 
 var ErrorMsgMap = map[StatusCode]string{
-	InvalidBody:    "Invalid Body",
+	InvalidBody:    "Invalid body",
 	InvalidID:      "Invalid ID",
-	ExecutionError: "Execution Error",
+	ExecutionError: "Execution error",
+	RuntimeError:   "Runtime error",
 }
 
 func Respond(c *gin.Context, code StatusCode, data interface{}) {
@@ -24,10 +26,11 @@ func Respond(c *gin.Context, code StatusCode, data interface{}) {
 	})
 }
 
-func RespondError(c *gin.Context, code StatusCode) {
+func RespondError(c *gin.Context, code StatusCode, err error) {
 	c.JSON(400, gin.H{
-		"code": code,
-		"msg":  ErrorMsgMap[code],
+		"code":  code,
+		"msg":   ErrorMsgMap[code],
+		"error": err,
 	})
 }
 

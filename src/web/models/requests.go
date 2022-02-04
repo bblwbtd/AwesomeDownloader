@@ -1,11 +1,10 @@
 package models
 
-type DownloadRequest struct {
+type TaskMeta struct {
 	URL  string `json:"url"`
 	Path string `json:"path"`
 }
 
-type BatchRequest struct {
-	Name  string             `json:"name"`
-	Tasks []*DownloadRequest `json:"tasks"`
+type DownloadRequest struct {
+	Tasks []*TaskMeta `json:"tasks"`
 }

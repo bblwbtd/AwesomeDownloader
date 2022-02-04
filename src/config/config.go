@@ -31,13 +31,12 @@ var defaultConfig = &Config{
 }
 
 var config *Config
-var configPath = path.Join("config", "config.json")
 
 func GetConfig() *Config {
 	return config
 }
 
-func InitConfig() {
+func InitConfig(configPath string) {
 	_, err := os.Stat(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -63,8 +62,4 @@ func InitConfig() {
 		}
 		config = temp
 	}
-}
-
-func RemoveConfig() {
-	_ = os.RemoveAll("config")
 }

@@ -40,7 +40,7 @@ func (d *TaskDecorator) GetTaskStatus() (DownloadStatus, error) {
 
 func (d *TaskDecorator) SetTaskStatus(status DownloadStatus) error {
 	d.entity.Status = status
-	if tx := database.DB.Save(d.entity.Status); tx.Error != nil {
+	if tx := database.DB.Save(d.entity); tx.Error != nil {
 		return tx.Error
 	}
 
@@ -49,7 +49,7 @@ func (d *TaskDecorator) SetTaskStatus(status DownloadStatus) error {
 
 func (d *TaskDecorator) SetTaskSize(size uint64) error {
 	d.entity.Size = size
-	if tx := database.DB.Save(d.entity.Status); tx.Error != nil {
+	if tx := database.DB.Save(d.entity); tx.Error != nil {
 		return tx.Error
 	}
 

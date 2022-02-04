@@ -21,11 +21,11 @@ func addTask(ctx *gin.Context) {
 	req := new(models.DownloadRequest)
 	err := ctx.BindJSON(req)
 	if err != nil {
-		utils.RespondError(ctx, utils.InvalidBody)
+		utils.RespondError(ctx, utils.InvalidBody, nil)
 		return
 	}
 
-	task := handlers.AddTask(req)
+	task := handlers.AddTasks(downloader, req.Tasks)
 
 	utils.RespondSuccess(ctx, task)
 }
@@ -33,11 +33,15 @@ func addTask(ctx *gin.Context) {
 func removeTask(ctx *gin.Context) {
 	id, err := utils.ExtractID(ctx)
 	if err != nil {
-		utils.RespondError(ctx, utils.InvalidID)
+		utils.RespondError(ctx, utils.InvalidID, err)
 		return
 	}
 
-	handlers.RemoveTask(id)
+	err = handlers.CancelTasks(downloader, []uint{id})
+	if err != nil {
+		utils.RespondError(ctx, utils.RuntimeError, err)
+		return
+	}
 
 	utils.RespondSuccess(ctx, "")
 }
@@ -45,11 +49,15 @@ func removeTask(ctx *gin.Context) {
 func pauseTask(ctx *gin.Context) {
 	id, err := utils.ExtractID(ctx)
 	if err != nil {
-		utils.RespondError(ctx, utils.InvalidID)
+		utils.RespondError(ctx, utils.InvalidID, err)
 		return
 	}
 
-	handlers.PauseTask(id)
+	err = handlers.PauseTask(downloader, []uint{id})
+	if err != nil {
+		utils.RespondError(ctx, utils.RuntimeError, err)
+		return
+	}
 
 	utils.RespondSuccess(ctx, "")
 }
@@ -57,11 +65,15 @@ func pauseTask(ctx *gin.Context) {
 func unpauseTask(ctx *gin.Context) {
 	id, err := utils.ExtractID(ctx)
 	if err != nil {
-		utils.RespondError(ctx, utils.InvalidID)
+		utils.RespondError(ctx, utils.InvalidID, err)
 		return
 	}
 
-	handlers.UnPauseBatch(id)
+	err = handlers.UnpauseTask(downloader, []uint{id})
+	if err != nil {
+		utils.RespondError(ctx, utils.RuntimeError, err)
+		return
+	}
 
 	utils.RespondSuccess(ctx, "")
 }
@@ -69,11 +81,15 @@ func unpauseTask(ctx *gin.Context) {
 func cancelTask(ctx *gin.Context) {
 	id, err := utils.ExtractID(ctx)
 	if err != nil {
-		utils.RespondError(ctx, utils.InvalidID)
+		utils.RespondError(ctx, utils.InvalidID, err)
 		return
 	}
 
-	handlers.CancelTask(id)
+	err = handlers.CancelTasks(downloader, []uint{id})
+	if err != nil {
+		utils.RespondError(ctx, utils.RuntimeError, err)
+		return
+	}
 
 	utils.RespondSuccess(ctx, "")
 }

@@ -4,3 +4,5 @@ temp
 /data.db
 vendor
 downloads
+config.json
+.gitignore

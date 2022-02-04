@@ -66,7 +66,7 @@ func (d *Downloader) SubscribeTaskChannel() {
 			},
 		}
 
-		if err := d.Download(decoratedTask.ctx, decoratedTask.entity, options); err != nil {
+		if err := d.Download(decoratedTask.ctx, decoratedTask.entity, options); err != nil && err != context.Canceled {
 			log.Println("Download error:", err)
 			if err := decoratedTask.SetTaskStatus(Error); err != nil {
 				log.Println("Failed to update task size:", err)
@@ -104,19 +104,23 @@ func (d *Downloader) SubscribeTaskChannel() {
 		}
 
 	}, func(err error) {
-		log.Println(err)
+		log.Println("Pipeline error:", err)
 	}, func() {
 		log.Println("Task channel closed")
-	}, rxgo.WithPool(cfg.MaxConnections))
+	})
 }
 
-func (d *Downloader) Enqueue(task *entities.Task) error {
-	decoratedTask := NewDecoratedTask(task)
+func (d *Downloader) CreateAndEnqueue(task *entities.Task) error {
 	if err := database.DB.Create(task).Error; err != nil {
 		return err
 	}
-	d.taskChannel <- rxgo.Of(decoratedTask)
+	d.Enqueue(task)
 	return nil
+}
+
+func (d *Downloader) Enqueue(task *entities.Task) {
+	decoratedTask := NewDecoratedTask(task)
+	d.taskChannel <- rxgo.Of(decoratedTask)
 }
 
 func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
@@ -138,7 +142,7 @@ func (d *Downloader) getContentLength(URL *url.URL) (uint64, error) {
 
 func (d *Downloader) Download(ctx context.Context, task *entities.Task, options *DownloadOptions) error {
 	log.Println("Begin downloading:", task.URL, task.Path)
-	defer log.Println("Finish downloading:", task.URL, task.Path)
+
 	URL, err := url.Parse(task.URL)
 	if err != nil {
 		return err
@@ -168,6 +172,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 	} else {
 		size := stat.Size()
 		if uint64(size) == length {
+			log.Println("File existed")
 			return nil
 		}
 		file, err = os.OpenFile(task.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
@@ -187,7 +192,7 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Println("body close error")
+			log.Println("body close error", err)
 		}
 	}(response.Body)
 
@@ -201,7 +206,12 @@ func (d *Downloader) Download(ctx context.Context, task *entities.Task, options 
 
 	_, err = io.Copy(file, io.TeeReader(response.Body, &counter))
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	log.Println("Finish download:", task.URL, task.Path)
+	return nil
 }
 
 func (d *Downloader) DeleteTasks(taskIDs []uint) error {
@@ -226,12 +236,13 @@ func (d *Downloader) PauseTasks(taskIDs []uint) error {
 		if task != nil {
 			task.Cancel()
 		}
+		log.Printf("Task %d is pasued\n", id)
 	}
 
 	return database.DB.Model(entities.Task{}).Where("id in ?", taskIDs).Update("status", Paused).Error
 }
 
-func (d *Downloader) UnPauseTasks(taskIDs []uint) error {
+func (d *Downloader) UnpauseTasks(taskIDs []uint) error {
 	var tasks []entities.Task
 
 	if err := database.DB.Transaction(func(tx *gorm.DB) error {

@@ -1,13 +1,18 @@
 package main
 
+import (
+	"AwesomeDownloader/src/config"
+	"AwesomeDownloader/src/database"
+	"AwesomeDownloader/src/web"
+	"fmt"
+)
+
 func main() {
-	//config.InitConfig()
-	//database.InitDB("data.db")
-	//
-	//core.StartScheduler()
-	//
-	//err := web.StartWebServer()
-	//if err != nil {
-	//	fmt.Print(err)
-	//}
+	config.InitConfig("config.json")
+	database.InitDB("data.db")
+
+	err := web.StartWebServer()
+	if err != nil {
+		fmt.Print(err)
+	}
 }
