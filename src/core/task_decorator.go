@@ -14,7 +14,7 @@ type taskDecorator struct {
 	ctx            context.Context
 	downloadedSize uint64
 	retryCount     int
-	headers        map[string]string
+
 }
 
 func NewDecoratedTask(entity *entities.Task) *taskDecorator {

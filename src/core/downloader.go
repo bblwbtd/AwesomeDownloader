@@ -6,6 +6,7 @@ import (
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/reactivex/rxgo/v2"
 	"gorm.io/gorm"
@@ -53,6 +54,11 @@ func (d *Downloader) SubscribeTaskChannel() {
 
 		d.taskMap[decoratedTask.entity.ID] = decoratedTask
 
+		var headers map[string]string
+		err := json.Unmarshal([]byte(decoratedTask.entity.Headers), &headers)
+		if err != nil {
+			log.Println("Abort invalid header", err)
+		}
 		options := &DownloadOptions{
 			UpdateSize: func(size uint64) {
 				err := decoratedTask.SetTaskSize(size)
@@ -64,7 +70,7 @@ func (d *Downloader) SubscribeTaskChannel() {
 			OnProgress: func(size uint64) {
 				decoratedTask.SetDownloadedSize(size)
 			},
-			Headers: decoratedTask.headers,
+			Headers: headers,
 		}
 
 		if err := d.Download(decoratedTask.ctx, decoratedTask.entity, options); err != nil && err != context.Canceled {
@@ -111,17 +117,16 @@ func (d *Downloader) SubscribeTaskChannel() {
 	})
 }
 
-func (d *Downloader) CreateAndEnqueue(task *entities.Task, headers map[string]string) error {
+func (d *Downloader) CreateAndEnqueue(task *entities.Task) error {
 	if err := database.DB.Create(task).Error; err != nil {
 		return err
 	}
-	d.Enqueue(task, headers)
+	d.Enqueue(task)
 	return nil
 }
 
-func (d *Downloader) Enqueue(task *entities.Task, headers map[string]string) {
+func (d *Downloader) Enqueue(task *entities.Task) {
 	decoratedTask := NewDecoratedTask(task)
-	decoratedTask.headers = headers
 	d.taskChannel <- rxgo.Of(decoratedTask)
 }
 
@@ -256,7 +261,7 @@ func (d *Downloader) UnpauseTasks(taskIDs []uint) error {
 	}
 
 	for _, task := range tasks {
-		d.Enqueue(&task, nil)
+		d.Enqueue(&task)
 	}
 
 	return nil

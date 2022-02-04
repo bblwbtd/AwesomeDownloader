@@ -5,6 +5,7 @@ import (
 	"AwesomeDownloader/src/database/entities"
 	"AwesomeDownloader/src/utils"
 	"AwesomeDownloader/src/web/models"
+	"encoding/json"
 	"log"
 )
 
@@ -12,14 +13,18 @@ func AddTasks(downloader *core.Downloader, taskMetas []*models.TaskMeta) []*enti
 
 	tasks := make([]*entities.Task, len(taskMetas))
 
+
 	for index, meta := range taskMetas {
+		headersStr, _ := json.Marshal(meta.Headers)
+
 		task := &entities.Task{
-			URL:    meta.URL,
-			Path:   utils.GetDownloadPath(meta.Path),
-			Status: core.Pending,
+			URL:     meta.URL,
+			Path:    utils.GetDownloadPath(meta.Path),
+			Status:  core.Pending,
+			Headers: string(headersStr),
 		}
 		tasks[index] = task
-		err := downloader.CreateAndEnqueue(task, meta.Headers)
+		err := downloader.CreateAndEnqueue(task)
 		if err != nil {
 			log.Println("Error occur while add tasks:", err)
 		}
